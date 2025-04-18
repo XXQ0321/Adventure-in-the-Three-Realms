@@ -1,0 +1,58 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+public class ButtonControlledMovement : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    public float moveSpeed = 5f;
+    public float acceleration = 10f;
+    public float deceleration = 10f;
+    
+    [Header("UI References")]
+    public Button leftButton;
+    public Button rightButton;
+    
+    private Rigidbody rb;
+    private float targetVelocity;
+    private float currentVelocity;
+    
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+        
+        // 设置按钮点击事件
+        leftButton.onClick.AddListener(() => targetVelocity = -moveSpeed);
+        rightButton.onClick.AddListener(() => targetVelocity = moveSpeed);
+        
+        // 按钮释放时停止移动
+        leftButton.GetComponent<EventTrigger>().triggers.Add(CreatePointerUpEvent());
+        rightButton.GetComponent<EventTrigger>().triggers.Add(CreatePointerUpEvent());
+    }
+    
+    private EventTrigger.Entry CreatePointerUpEvent()
+    {
+        EventTrigger.Entry entry = new EventTrigger.Entry();
+        entry.eventID = EventTriggerType.PointerUp;
+        entry.callback.AddListener((data) => { targetVelocity = 0f; });
+        return entry;
+    }
+    
+    private void FixedUpdate()
+    {
+        // 平滑加速/减速
+        currentVelocity = Mathf.MoveTowards(
+            currentVelocity, 
+            targetVelocity, 
+            (targetVelocity == 0 ? deceleration : acceleration) * Time.fixedDeltaTime);
+        
+        // 应用速度（保持y轴速度不变）
+        rb.velocity = new Vector3(currentVelocity, rb.velocity.y, 0);
+    }
+    
+    private void OnDestroy()
+    {
+        // 移除监听器
+        leftButton.onClick.RemoveAllListeners();
+        rightButton.onClick.RemoveAllListeners();
+    }
+}
